@@ -24,8 +24,6 @@ namespace Connect4Server.Controllers
         /// Checks if a game has timed out (been InProgress for more than 5 minutes)
         /// and automatically marks it as "Lost" if so.
         /// </summary>
-        /// <param name="game">The game to check for timeout</param>
-        /// <returns>True if the game was timed out, false otherwise</returns>
         private async Task<bool> CheckAndHandleGameTimeout(Game game)
         {
             if (game.Status == "InProgress" && game.StartTime.AddMinutes(GAME_TIMEOUT_MINUTES) < DateTime.Now)
@@ -47,8 +45,6 @@ namespace Connect4Server.Controllers
         /// Starts a new Connect 4 game for a registered player.
         /// Creates a new game record with empty board state and initializes game settings.
         /// </summary>
-        /// <param name="request">Contains the player ID to start the game</param>
-        /// <returns>Response with new game data or error message</returns>
         [HttpPost("start")]
         public async Task<ActionResult<StartGameResponse>> StartGame([FromBody] StartGameRequest request)
         {
@@ -64,7 +60,6 @@ namespace Connect4Server.Controllers
                     });
                 }
 
-                // Create empty board as jagged array for proper JSON serialization
                 var emptyBoard = new int[6][];
                 for (int i = 0; i < 6; i++)
                 {
@@ -108,8 +103,6 @@ namespace Connect4Server.Controllers
         /// Processes a player's move in Connect 4 game, validates the move, updates game state,
         /// and triggers CPU response. Handles complete game flow including win detection and turn management.
         /// </summary>
-        /// <param name="request">Contains game ID and column number for the move</param>
-        /// <returns>Response with updated game state and CPU move if applicable</returns>
         [HttpPost("move")]
         public async Task<ActionResult<MakeMoveResponse>> MakeMove([FromBody] MakeMoveRequest request)
         {
@@ -127,7 +120,6 @@ namespace Connect4Server.Controllers
                     });
                 }
 
-                // Check for game timeout before processing the move
                 var wasTimedOut = await CheckAndHandleGameTimeout(game);
                 if (wasTimedOut)
                 {
@@ -156,7 +148,6 @@ namespace Connect4Server.Controllers
                     });
                 }
 
-                // Deserialize jagged array and convert to 2D array for game logic
                 var boardJagged = JsonSerializer.Deserialize<int[][]>(game.BoardState);
                 if (boardJagged == null)
                 {
@@ -167,7 +158,6 @@ namespace Connect4Server.Controllers
                     }
                 }
                 
-                // Convert to 2D array for existing game logic
                 var board = new int[6, 7];
                 for (int i = 0; i < 6; i++)
                 {
@@ -195,7 +185,6 @@ namespace Connect4Server.Controllers
                     });
                 }
 
-                // Drop the player's piece in the selected column (gravity effect)
                 for (int row = 5; row >= 0; row--)
                 {
                     if (board[row, request.Column] == 0)
@@ -205,7 +194,6 @@ namespace Connect4Server.Controllers
                     }
                 }
 
-                // Check if player won with this move
                 if (CheckWin(board, 1))
                 {
                     game.Status = "Won";
@@ -222,17 +210,14 @@ namespace Connect4Server.Controllers
                     game.Player.GamesPlayed++;
                 }
                 
-                // Store CPU move BEFORE placing it on board to return the correct move
                 int? actualCpuMove = null;
                 if (game.Status == "InProgress")
                 {
-                    // CPU makes its move if game continues
                     var cpuMove = MakeCpuMove(board);
                     actualCpuMove = cpuMove;
                     
                     if (cpuMove != -1)
                     {
-                        // Drop CPU's piece in selected column
                         for (int row = 5; row >= 0; row--)
                         {
                             if (board[row, cpuMove] == 0)
@@ -242,7 +227,6 @@ namespace Connect4Server.Controllers
                             }
                         }
 
-                        // Check if CPU won
                         if (CheckWin(board, 2))
                         {
                             game.Status = "Lost";
@@ -261,7 +245,6 @@ namespace Connect4Server.Controllers
                     }
                 }
 
-                // Convert 2D array back to jagged array for serialization
                 var updatedBoardJagged = new int[6][];
                 for (int i = 0; i < 6; i++)
                 {
@@ -281,7 +264,7 @@ namespace Connect4Server.Controllers
                     Success = true,
                     Message = "Move made successfully",
                     Game = MapToDto(game),
-                    CpuMove = actualCpuMove // Return the actual CPU move that was made
+                    CpuMove = actualCpuMove
                 });
             }
             catch (Exception ex)
@@ -294,6 +277,10 @@ namespace Connect4Server.Controllers
             }
         }
 
+        /// <summary>
+        /// Retrieves a game by its ID, including player data, and checks for a timeout.
+        /// Returns the game details as a DTO or 404 if the game is not found.
+        /// </summary>
         [HttpGet("{gameId}")]
         public async Task<ActionResult<GameDto>> GetGame(int gameId)
         {
@@ -305,7 +292,6 @@ namespace Connect4Server.Controllers
                 return NotFound();
             }
 
-            // Check for game timeout
             await CheckAndHandleGameTimeout(game);
 
             return Ok(MapToDto(game));
@@ -315,7 +301,6 @@ namespace Connect4Server.Controllers
         /// Cleans up all timed-out games by marking them as "Lost".
         /// This endpoint can be called periodically to clean up abandoned games.
         /// </summary>
-        /// <returns>Response with cleanup results</returns>
         [HttpPost("cleanup-timeouts")]
         public async Task<ActionResult<CleanupTimeoutsResponse>> CleanupTimeouts()
         {
@@ -362,17 +347,13 @@ namespace Connect4Server.Controllers
         }
 
         /// <summary>
-        /// Converts a Game entity to a GameDto for API response.
+        /// Converts a Game entity to a GameDto (Data Transfer Object) for API response.
         /// Deserializes board state from JSON and includes player statistics.
         /// </summary>
-        /// <param name="game">The game entity from database</param>
-        /// <returns>GameDto with deserialized board and player data</returns>
         private GameDto MapToDto(Game game)
         {
-            // Deserialize jagged array directly (no conversion needed)
             var boardJagged = JsonSerializer.Deserialize<int[][]>(game.BoardState);
             
-            // Create empty board if deserialization fails
             if (boardJagged == null)
             {
                 boardJagged = new int[6][];
@@ -389,7 +370,7 @@ namespace Connect4Server.Controllers
                 StartTime = game.StartTime,
                 EndTime = game.EndTime,
                 Status = game.Status,
-                Board = boardJagged, // Use jagged array directly
+                Board = boardJagged,
                 CurrentPlayer = game.CurrentPlayer,
                 Winner = game.Winner,
                 Player = game.Player != null ? new PlayerDto
@@ -407,11 +388,9 @@ namespace Connect4Server.Controllers
         }
 
         /// <summary>
-        /// Generates a random CPU move for Connect 4 game.
+        /// Generates a random CPU move for the game board.
         /// Identifies all valid columns (not full) and selects one randomly.
         /// </summary>
-        /// <param name="board">Current game board state (6x7 array)</param>
-        /// <returns>Column index (0-6) for CPU move, or -1 if no valid moves</returns>
         private int MakeCpuMove(int[,] board)
         {
             var validColumns = new List<int>();
@@ -436,9 +415,6 @@ namespace Connect4Server.Controllers
         /// - Vertical: 4 consecutive pieces in same column  
         /// - Diagonal: 4 consecutive pieces in diagonal direction (both ways)
         /// </summary>
-        /// <param name="board">Current game board state (6x7 array)</param>
-        /// <param name="player">Player identifier (1 for human, 2 for CPU)</param>
-        /// <returns>True if player has won, false otherwise</returns>
         private bool CheckWin(int[,] board, int player)
         {
             // Check horizontal wins (4 in a row)
@@ -489,11 +465,8 @@ namespace Connect4Server.Controllers
         }
 
         /// <summary>
-        /// Checks if the Connect 4 board is completely full (no more moves possible).
-        /// Only needs to check the top row since pieces fall down due to gravity.
+        /// Checks if the game board is completely full (no more moves possible).
         /// </summary>
-        /// <param name="board">Current game board state (6x7 array)</param>
-        /// <returns>True if board is full, false if moves are still possible</returns>
         private bool IsBoardFull(int[,] board)
         {
             for (int col = 0; col < 7; col++)
