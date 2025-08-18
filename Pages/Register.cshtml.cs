@@ -211,11 +211,11 @@ namespace Connect4Server.Pages
                 { "Israel", 10 },
                 { "United States", 10 },
                 { "United Kingdom", 10 },
-                { "Germany", 10 },
-                { "France", 9 },
+                { "Germany", 12 },
+                { "France", 11 },
                 { "Canada", 10 },
                 { "Australia", 9 },
-                { "Japan", 10 },
+                { "Japan", 12 },
                 { "South Korea", 10 }
             };
 

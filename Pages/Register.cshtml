@@ -22,10 +22,10 @@
                 <!-- Success/Error Message -->
                 @if (!string.IsNullOrEmpty(Model.Message))
                 {
-                    <div class="alert @(Model.Success ? "alert-success" : "alert-danger") alert-modern mb-4">
-                        <i class="fas @(Model.Success ? "fa-check-circle" : "fa-exclamation-triangle") me-2"></i>
-                        @Model.Message
-                    </div>
+                <div class="alert @(Model.Success ? "alert-success" : "alert-danger") alert-modern mb-4">
+                    <i class="fas @(Model.Success ? "fa-check-circle" : "fa-exclamation-triangle") me-2"></i>
+                    @Model.Message
+                </div>
                 }
 
                 <div class="registration-card">
@@ -46,7 +46,7 @@
                                         </label>
                                         <input asp-for="Player.FirstName"
                                                class="form-control form-control-modern @(ViewData.ModelState["Player.FirstName"]?.Errors.Count > 0 ? "is-invalid" : "")"
-                                               placeholder="Enter your first name" 
+                                               placeholder="Enter your first name"
                                                id="firstNameInput" />
                                         <span asp-validation-for="Player.FirstName" class="invalid-feedback d-block"></span>
                                         <div class="validation-status" id="firstNameStatus"></div>
@@ -62,7 +62,7 @@
                                         <input asp-for="Player.PlayerId"
                                                class="form-control form-control-modern @(ViewData.ModelState["Player.PlayerId"]?.Errors.Count > 0 ? "is-invalid" : "")"
                                                type="number" min="1" max="1000"
-                                               placeholder="Choose unique ID (1-1000)" 
+                                               placeholder="Choose unique ID (1-1000)"
                                                id="playerIdInput" />
                                         <span asp-validation-for="Player.PlayerId" class="invalid-feedback d-block"></span>
                                         <div class="validation-status" id="playerIdStatus"></div>
@@ -86,7 +86,7 @@
                                             <option value="">-- Select your country --</option>
                                             @foreach (var country in Model.CountriesList)
                                             {
-                                                <option value="@country">@country</option>
+                                            <option value="@country">@country</option>
                                             }
                                         </select>
                                         <span asp-validation-for="Player.Country" class="invalid-feedback d-block"></span>
@@ -138,9 +138,8 @@
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
     <script src="https://cdn.jsdelivr.net/npm/libphonenumber-js@1.9.19/bundle/libphonenumber-js.min.js"></script>
-    
+
     <script>
-        // Mapping of country names to country codes
         const countryCodeMap = {
             "Afghanistan": "AF", "Albania": "AL", "Algeria": "DZ", "Andorra": "AD", "Angola": "AO",
             "Antigua and Barbuda": "AG", "Argentina": "AR", "Armenia": "AM", "Australia": "AU", "Austria": "AT",
@@ -180,76 +179,110 @@
             "Venezuela": "VE", "Vietnam": "VN", "Yemen": "YE", "Zambia": "ZM", "Zimbabwe": "ZW"
         };
 
-        // Specific phone formats for common countries with validation rules
         const phoneFormats = {
             'Israel': {
                 placeholder: '052-1234567',
                 format: 'Israeli format: 0XX-XXXXXXX (e.g., 052-1234567)',
                 maxLength: 10,
-                pattern: /^(\d{3})(\d{7})$/,
+                pattern: /^0\d{9}$/,
+                displayPattern: /^(\d{3})(\d{7})$/,
                 formatFunction: (value) => {
                     const match = value.match(/^(\d{3})(\d{7})$/);
                     return match ? `${match[1]}-${match[2]}` : value;
+                },
+                validateInput: (value) => {
+                    const digitsOnly = value.replace(/\D/g, '');
+                    return digitsOnly.startsWith('0') && digitsOnly.length <= 10;
                 }
             },
             'United States': {
                 placeholder: '(555) 123-4567',
-                format: 'US format: (XXX) XXX-XXXX (e.g., (555) 123-4567)',
+                format: 'US format: 555 XXX-XXXX (e.g., (555) 123-4567)',
                 maxLength: 10,
-                pattern: /^(\d{3})(\d{3})(\d{4})$/,
+                pattern: /^555\d{7}$/,
+                displayPattern: /^(\d{3})(\d{3})(\d{4})$/,
                 formatFunction: (value) => {
                     const match = value.match(/^(\d{3})(\d{3})(\d{4})$/);
                     return match ? `(${match[1]}) ${match[2]}-${match[3]}` : value;
+                },
+                validateInput: (value) => {
+                    const digitsOnly = value.replace(/\D/g, '');
+                    return /^555\d{7}$/.test(digitsOnly);
                 }
             },
             'United Kingdom': {
-                placeholder: '+44 1234 567890',
-                format: 'UK format: +44 XXXX XXXXXX (e.g., +44 1234 567890)',
+                placeholder: '1234567890',
+                format: 'UK format: XXXXXXXXXX (10 digits)',
                 maxLength: 10,
-                pattern: /^(\d{4})(\d{6})$/,
+                pattern: /^\d{10}$/,
+                displayPattern: /^(\d{4})(\d{6})$/,
                 formatFunction: (value) => {
                     const match = value.match(/^(\d{4})(\d{6})$/);
                     return match ? `+44 ${match[1]} ${match[2]}` : value;
+                },
+                validateInput: (value) => {
+                    const digitsOnly = value.replace(/\D/g, '');
+                    return digitsOnly.length <= 10;
                 }
             },
             'Germany': {
                 placeholder: '+49 30 12345678',
-                format: 'German format: +49 XXX XXXXXXX (e.g., +49 30 12345678)',
+                format: 'German format: +49 30X XXXXXXX (e.g., +49 30 12345678)',
                 maxLength: 10,
-                pattern: /^(\d{3})(\d{7})$/,
+                pattern: /^30\d{8}$/,
+                displayPattern: /^(\d{3})(\d{7})$/,
                 formatFunction: (value) => {
                     const match = value.match(/^(\d{3})(\d{7})$/);
                     return match ? `+49 ${match[1]} ${match[2]}` : value;
+                },
+                validateInput: (value) => {
+                    const digitsOnly = value.replace(/\D/g, '');
+                    return /^30\d{8}$/.test(digitsOnly);
                 }
             },
             'France': {
-                placeholder: '+33 1 23 45 67 89',
-                format: 'French format: +33 X XX XX XX XX (e.g., +33 1 23 45 67 89)',
+                placeholder: '+33 6/7 23 45 67 89',
+                format: 'French format: +33 6/7 XX XX XX XX (e.g., +33 6 23 45 67 89)',
                 maxLength: 9,
-                pattern: /^(\d{1})(\d{2})(\d{2})(\d{2})(\d{2})$/,
+                pattern: /^[67]\d{8}$/,
+                displayPattern: /^(\d{1})(\d{2})(\d{2})(\d{2})(\d{2})$/,
                 formatFunction: (value) => {
                     const match = value.match(/^(\d{1})(\d{2})(\d{2})(\d{2})(\d{2})$/);
                     return match ? `+33 ${match[1]} ${match[2]} ${match[3]} ${match[4]} ${match[5]}` : value;
+                },
+                validateInput: (value) => {
+                    const digitsOnly = value.replace(/\D/g, '');
+                    return /^[67]\d{8}$/.test(digitsOnly);
                 }
             },
             'Canada': {
-                placeholder: '(416) 123-4567',
-                format: 'Canadian format: (XXX) XXX-XXXX (e.g., (416) 123-4567)',
+                placeholder: '4161234567',
+                format: 'Canadian format: XXXXXXXXXX (10 digits)',
                 maxLength: 10,
-                pattern: /^(\d{3})(\d{3})(\d{4})$/,
+                pattern: /^\d{10}$/,
+                displayPattern: /^(\d{3})(\d{3})(\d{4})$/,
                 formatFunction: (value) => {
                     const match = value.match(/^(\d{3})(\d{3})(\d{4})$/);
                     return match ? `(${match[1]}) ${match[2]}-${match[3]}` : value;
+                },
+                validateInput: (value) => {
+                    const digitsOnly = value.replace(/\D/g, '');
+                    return digitsOnly.length <= 10;
                 }
             },
             'Australia': {
-                placeholder: '+61 2 1234 5678',
-                format: 'Australian format: +61 X XXXX XXXX (e.g., +61 2 1234 5678)',
+                placeholder: '212345678',
+                format: 'Australian format: XXXXXXXXX (9 digits)',
                 maxLength: 9,
-                pattern: /^(\d{1})(\d{4})(\d{4})$/,
+                pattern: /^\d{9}$/,
+                displayPattern: /^(\d{1})(\d{4})(\d{4})$/,
                 formatFunction: (value) => {
                     const match = value.match(/^(\d{1})(\d{4})(\d{4})$/);
                     return match ? `+61 ${match[1]} ${match[2]} ${match[3]}` : value;
+                },
+                validateInput: (value) => {
+                    const digitsOnly = value.replace(/\D/g, '');
+                    return digitsOnly.length <= 9;
                 }
             },
             'Japan': {
@@ -260,16 +293,25 @@
                 formatFunction: (value) => {
                     const match = value.match(/^(\d{2})(\d{4})(\d{4})$/);
                     return match ? `+81 ${match[1]} ${match[2]} ${match[3]}` : value;
+                },
+                validateInput: (value) => {
+                    const digitsOnly = value.replace(/\D/g, '');
+                    return digitsOnly.length <= 10;
                 }
             },
             'South Korea': {
-                placeholder: '+82 10 1234 5678',
-                format: 'Korean format: +82 XX XXXX XXXX (e.g., +82 10 1234 5678)',
+                placeholder: '1012345678',
+                format: 'Korean format: XXXXXXXXXX (10 digits)',
                 maxLength: 10,
-                pattern: /^(\d{2})(\d{4})(\d{4})$/,
+                pattern: /^\d{10}$/,
+                displayPattern: /^(\d{2})(\d{4})(\d{4})$/,
                 formatFunction: (value) => {
                     const match = value.match(/^(\d{2})(\d{4})(\d{4})$/);
                     return match ? `+82 ${match[1]} ${match[2]} ${match[3]}` : value;
+                },
+                validateInput: (value) => {
+                    const digitsOnly = value.replace(/\D/g, '');
+                    return digitsOnly.length <= 10;
                 }
             }
         };
@@ -284,87 +326,138 @@
             if (!country) {
                 phoneInput.disabled = true;
                 phoneInput.placeholder = "Select country first";
-                phoneFormat.innerHTML = '<i class="fas fa-info-circle me-1"></i>Please select a country first';
                 phoneInput.value = '';
+                phoneFormat.innerHTML = '<i class="fas fa-info-circle me-1"></i>Please select a country first';
+                // Clear validation classes
+                phoneInput.classList.remove('is-valid', 'is-invalid');
                 return;
             }
 
             phoneInput.disabled = false;
+            phoneInput.value = '';
+            phoneInput.classList.remove('is-valid', 'is-invalid');
 
             // Check if we have a specific format for this country
             const format = phoneFormats[country];
             if (format) {
                 phoneInput.placeholder = format.placeholder;
-                phoneFormat.innerHTML = `<i class="fas fa-info-circle me-1"></i>${format.format} (Max ${format.maxLength} digits)`;
-                // Set maxlength attribute for HTML validation
-                phoneInput.setAttribute('maxlength', format.maxLength + 5); // Add extra space for formatting characters
+                phoneFormat.innerHTML = `<i class="fas fa-info-circle me-1"></i>${format.format}`;
+                phoneInput.removeAttribute('maxlength');
             } else {
                 // For other countries, use international format
-                phoneInput.placeholder = '+1 1234567890';
-                phoneFormat.innerHTML = '<i class="fas fa-info-circle me-1"></i>International format: +XXX XXXXXXXXXX (e.g., +1 1234567890)';
+                phoneInput.placeholder = '1234567890';
+                phoneFormat.innerHTML = '<i class="fas fa-info-circle me-1"></i>International format: Enter digits only (min 10 digits)';
                 phoneInput.removeAttribute('maxlength');
             }
-            
-            phoneInput.value = '';
         }
 
-        // Phone input validation and formatting
-        document.addEventListener('DOMContentLoaded', function() {
+        // Improved phone input handling
+        document.addEventListener('DOMContentLoaded', function () {
             const phoneInput = document.getElementById('phoneInput');
-            let currentCountry = '';
-            
-            phoneInput.addEventListener('input', function(e) {
+            let isFormatting = false; // Flag to prevent recursive formatting
+
+            phoneInput.addEventListener('input', function (e) {
+                if (isFormatting) return; // Prevent recursive calls
+
                 const country = document.getElementById('countrySelect').value;
                 if (!country) return;
-                
+
                 const format = phoneFormats[country];
-                if (!format) {
+
+                // Get cursor position before modification
+                const cursorPos = this.selectionStart;
+                const oldValue = this.value;
+
+                // Remove all non-digits
+                let digitsOnly = this.value.replace(/\D/g, '');
+
+                if (format) {
+                    // Validate input length and format
+                    if (!format.validateInput(digitsOnly)) {
+                        // If validation fails, restrict the input
+                        digitsOnly = digitsOnly.substring(0, format.maxLength);
+                    }
+
+                    // Only show digits while typing, format on blur
+                    this.value = digitsOnly;
+
+                    // Add validation classes based on completeness
+                    this.classList.remove('is-valid', 'is-invalid');
+                    if (digitsOnly.length === format.maxLength) {
+                        if (format.pattern.test(digitsOnly)) {
+                            this.classList.add('is-valid');
+                        } else {
+                            this.classList.add('is-invalid');
+                        }
+                    } else if (digitsOnly.length > 0) {
+
+                    }
+                } else {
                     // For other countries, allow international format
                     this.value = this.value.replace(/[^0-9\s\(\)\-\+]/g, '');
-                    return;
-                }
-                
-                // Remove all non-digits first
-                let digitsOnly = this.value.replace(/\D/g, '');
-                
-                // Limit to max length for the country
-                if (digitsOnly.length > format.maxLength) {
-                    digitsOnly = digitsOnly.substring(0, format.maxLength);
-                }
-                
-                // Format the number according to country pattern
-                if (digitsOnly.length === format.maxLength) {
-                    this.value = format.formatFunction(digitsOnly);
-                } else {
-                    this.value = digitsOnly;
+
+                    // Basic validation for international numbers
+                    if (digitsOnly.length >= 10) {
+                        this.classList.remove('is-invalid');
+                        this.classList.add('is-valid');
+                    } else if (digitsOnly.length > 0) {
+                        this.classList.remove('is-valid', 'is-invalid');
+                    }
                 }
             });
-            
-            // Format on blur (when user leaves the field)
-            phoneInput.addEventListener('blur', function(e) {
+
+            // Format the number when user leaves the field (blur event)
+            phoneInput.addEventListener('blur', function (e) {
                 const country = document.getElementById('countrySelect').value;
                 if (!country) return;
-                
+
                 const format = phoneFormats[country];
                 if (!format) return;
-                
+
                 let digitsOnly = this.value.replace(/\D/g, '');
-                if (digitsOnly.length === format.maxLength) {
+
+                // Only format if we have the complete number
+                if (digitsOnly.length === format.maxLength && format.pattern.test(digitsOnly)) {
+                    isFormatting = true;
                     this.value = format.formatFunction(digitsOnly);
+                    this.classList.remove('is-invalid');
+                    this.classList.add('is-valid');
+                    isFormatting = false;
+                } else if (digitsOnly.length > 0) {
+                    // Keep only digits if incomplete
+                    this.value = digitsOnly;
+                    this.classList.remove('is-valid');
+                    this.classList.add('is-invalid');
+                }
+            });
+
+            // When focusing back on the field, show only digits for easier editing
+            phoneInput.addEventListener('focus', function (e) {
+                const country = document.getElementById('countrySelect').value;
+                if (!country) return;
+
+                const format = phoneFormats[country];
+                if (!format) return;
+
+                // Convert formatted number back to digits only for editing
+                let digitsOnly = this.value.replace(/\D/g, '');
+                if (digitsOnly.length > 0) {
+                    isFormatting = true;
+                    this.value = digitsOnly;
+                    isFormatting = false;
                 }
             });
 
             // Restrict First Name field to only allow alphabetic characters
             const firstNameInput = document.querySelector('input[name="Player.FirstName"]');
             if (firstNameInput) {
-                firstNameInput.addEventListener('input', function(e) {
-                    this.value = this.value.replace(/[^a-zA-Z\s]/g, ''); // Allow only alphabetic characters and spaces
+                firstNameInput.addEventListener('input', function (e) {
+                    this.value = this.value.replace(/[^a-zA-Z\s]/g, '');
                 });
             }
 
             // Real-time validation for First Name and Player ID
             setupRealTimeValidation();
-
             updatePhoneValidation();
 
             // Re-enable phone input if country is already selected (after form submission with errors)
@@ -384,11 +477,10 @@
                 let playerIdTimeout;
 
                 // First Name validation
-                firstNameInput.addEventListener('input', function() {
+                firstNameInput.addEventListener('input', function () {
                     clearTimeout(firstNameTimeout);
                     const value = this.value.trim();
-                    
-                    // Clear previous validation
+
                     this.classList.remove('is-valid', 'is-invalid');
                     firstNameStatus.className = 'validation-status';
                     firstNameStatus.innerHTML = '';
@@ -397,7 +489,6 @@
                         return;
                     }
 
-                    // Basic validation first
                     if (value.length < 2) {
                         this.classList.add('is-invalid');
                         firstNameStatus.className = 'validation-status invalid';
@@ -411,24 +502,21 @@
                         return;
                     }
 
-                    // Show checking status
                     firstNameStatus.className = 'validation-status checking';
                     firstNameStatus.innerHTML = '<i class="fas fa-spinner fa-spin"></i>Checking availability...';
 
-                    // Debounce the API call
                     firstNameTimeout = setTimeout(() => {
                         firstNameInput.classList.add('is-valid');
                         firstNameStatus.className = 'validation-status valid';
-                        firstNameStatus.innerHTML = '<i class="fas fa-check-circle"></i>Name is available';      
+                        firstNameStatus.innerHTML = '<i class="fas fa-check-circle"></i>Name is available';
                     }, 500);
                 });
 
                 // Player ID validation
-                playerIdInput.addEventListener('input', function() {
+                playerIdInput.addEventListener('input', function () {
                     clearTimeout(playerIdTimeout);
                     const value = this.value.trim();
-                    
-                    // Clear previous validation
+
                     this.classList.remove('is-valid', 'is-invalid');
                     playerIdStatus.className = 'validation-status';
                     playerIdStatus.innerHTML = '';
@@ -437,7 +525,6 @@
                         return;
                     }
 
-                    // Basic validation first
                     const playerId = parseInt(value);
                     if (isNaN(playerId) || playerId < 1 || playerId > 1000) {
                         this.classList.add('is-invalid');
@@ -446,11 +533,9 @@
                         return;
                     }
 
-                    // Show checking status
                     playerIdStatus.className = 'validation-status checking';
                     playerIdStatus.innerHTML = '<i class="fas fa-spinner fa-spin"></i>Checking availability...';
 
-                    // Debounce the API call
                     playerIdTimeout = setTimeout(() => {
                         checkPlayerIdAvailability(playerId);
                     }, 500);
@@ -468,7 +553,7 @@
 
                         if (response.ok) {
                             const data = await response.json();
-                            
+
                             if (data.exists) {
                                 playerIdInput.classList.add('is-invalid');
                                 playerIdStatus.className = 'validation-status invalid';
@@ -530,17 +615,17 @@
         overflow: hidden;
     }
 
-    .registration-card .card-header {
-        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-        border: none;
-        padding: 30px;
-    }
+        .registration-card .card-header {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border: none;
+            padding: 30px;
+        }
 
-    .registration-card .card-header h4 {
-        color: #2d3748;
-        font-weight: 700;
-        margin-bottom: 8px;
-    }
+            .registration-card .card-header h4 {
+                color: #2d3748;
+                font-weight: 700;
+                margin-bottom: 8px;
+            }
 
     .card-subtitle {
         color: #718096;
@@ -559,11 +644,11 @@
         font-size: 0.95rem;
     }
 
-    .form-label.required::after {
-        content: " *";
-        color: #dc3545;
-        font-weight: bold;
-    }
+        .form-label.required::after {
+            content: " *";
+            color: #dc3545;
+            font-weight: bold;
+        }
 
     .form-control-modern {
         padding: 15px 20px;
@@ -574,27 +659,27 @@
         background: #f8f9fa;
     }
 
-    .form-control-modern:focus {
-        border-color: #667eea;
-        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
-        background: white;
-    }
+        .form-control-modern:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+            background: white;
+        }
 
-    .form-control-modern:disabled {
-        background: #f1f5f9;
-        color: #9ca3af;
-        cursor: not-allowed;
-    }
+        .form-control-modern:disabled {
+            background: #f1f5f9;
+            color: #9ca3af;
+            cursor: not-allowed;
+        }
 
-    .form-control-modern.is-invalid {
-        border-color: #dc3545;
-        background: #fff5f5;
-    }
+        .form-control-modern.is-invalid {
+            border-color: #dc3545;
+            background: #fff5f5;
+        }
 
-    .form-control-modern.is-invalid:focus {
-        border-color: #dc3545;
-        box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
-    }
+            .form-control-modern.is-invalid:focus {
+                border-color: #dc3545;
+                box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+            }
 
     .invalid-feedback {
         display: block !important;
@@ -621,11 +706,11 @@
         box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
     }
 
-    .btn-register:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 15px 35px rgba(102, 126, 234, 0.4);
-        background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
-    }
+        .btn-register:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 35px rgba(102, 126, 234, 0.4);
+            background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+        }
 
     .requirements-info {
         background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
@@ -634,17 +719,17 @@
         border-left: 4px solid #0ea5e9;
     }
 
-    .requirements-info h6 {
-        color: #0369a1;
-        font-weight: 600;
-        margin-bottom: 10px;
-    }
+        .requirements-info h6 {
+            color: #0369a1;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
 
-    .requirements-info li {
-        color: #374151;
-        margin-bottom: 5px;
-        font-size: 0.9rem;
-    }
+        .requirements-info li {
+            color: #374151;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+        }
 
     .alert-modern {
         border-radius: 15px;
@@ -674,37 +759,37 @@
         gap: 5px;
     }
 
-    .validation-status.valid {
-        color: #059669;
-    }
+        .validation-status.valid {
+            color: #059669;
+        }
 
-    .validation-status.invalid {
-        color: #dc2626;
-    }
+        .validation-status.invalid {
+            color: #dc2626;
+        }
 
-    .validation-status.checking {
-        color: #f59e0b;
-    }
+        .validation-status.checking {
+            color: #f59e0b;
+        }
 
     .form-control-modern.is-valid {
         border-color: #059669;
         background: #f0fdf4;
     }
 
-    .form-control-modern.is-valid:focus {
-        border-color: #059669;
-        box-shadow: 0 0 0 0.2rem rgba(5, 150, 105, 0.25);
-    }
+        .form-control-modern.is-valid:focus {
+            border-color: #059669;
+            box-shadow: 0 0 0 0.2rem rgba(5, 150, 105, 0.25);
+        }
 
     .form-control-modern.is-invalid {
         border-color: #dc2626;
         background: #fef2f2;
     }
 
-    .form-control-modern.is-invalid:focus {
-        border-color: #dc2626;
-        box-shadow: 0 0 0 0.2rem rgba(220, 38, 38, 0.25);
-    }
+        .form-control-modern.is-invalid:focus {
+            border-color: #dc2626;
+            box-shadow: 0 0 0 0.2rem rgba(220, 38, 38, 0.25);
+        }
 
     @@media (max-width: 768px) {
         .hero-title {
